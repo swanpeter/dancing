@@ -294,6 +294,7 @@ def _serialize_history(history: List[Dict[str, object]]) -> List[Dict[str, objec
                 "no_text": entry.get("no_text"),
                 "extra_params": entry.get("extra_params"),
                 "video_path": entry.get("video_path"),
+                "last_frame_path": entry.get("last_frame_path"),
                 "timestamp": entry.get("timestamp"),
                 "image_b64": image_b64,
             }
@@ -314,6 +315,7 @@ def _deserialize_history(payload: List[Dict[str, object]]) -> List[Dict[str, obj
                 "no_text": entry.get("no_text"),
                 "extra_params": entry.get("extra_params"),
                 "video_path": entry.get("video_path"),
+                "last_frame_path": entry.get("last_frame_path"),
                 "timestamp": entry.get("timestamp"),
                 "image_bytes": image_bytes,
             }

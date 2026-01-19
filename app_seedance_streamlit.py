@@ -116,7 +116,7 @@ def run_generation(
     last_frame: Optional[bytes],
     last_mime: Optional[str],
     log_func: Callable[[str], None],
-) -> Tuple[Optional[str], Optional[str]]:
+) -> Tuple[Optional[str], Optional[str], Optional[str]]:
     final_prompt = build_prompt(prompt_text, extra_params)
     if not final_prompt:
         raise ValueError("プロンプトが空です。")
@@ -155,6 +155,7 @@ def run_generation(
     log_func("動画の保存完了")
 
     last_frame_url = getattr(getattr(result, "content", None), "last_frame_url", None)
+    last_frame_path = None
     if last_frame_url:
         last_frame_path = os.path.join(save_dir, f"{task_id}_last_frame.png")
         log_func(f"last frameをダウンロード中: {last_frame_path}")
@@ -162,7 +163,7 @@ def run_generation(
         log_func("last frameの保存完了")
 
     save_prompt_text(video_path, final_prompt, log_func)
-    return video_path, task_id
+    return video_path, task_id, last_frame_path
 
 
 def init_session_state() -> None:
@@ -219,7 +220,7 @@ def main() -> None:
             last_mime = last_file.type if last_file else None
 
             with st.spinner("生成中..."):
-                video_path, task_id = run_generation(
+                video_path, task_id, last_frame_path = run_generation(
                     prompt_text=prompt_text,
                     extra_params=extra_params,
                     save_dir=save_dir,
@@ -231,6 +232,8 @@ def main() -> None:
                 )
             if video_path:
                 st.session_state["last_video_path"] = video_path
+                if last_frame_path:
+                    st.session_state["last_frame_path"] = last_frame_path
                 st.session_state.history.insert(
                     0,
                     {
@@ -240,6 +243,7 @@ def main() -> None:
                         "extra_params": extra_params.strip(),
                         "model": SEEDANCE_MODEL_ID,
                         "video_path": video_path,
+                        "last_frame_path": last_frame_path,
                     },
                 )
                 persist_history_to_storage(st.session_state.history)
@@ -256,6 +260,14 @@ def main() -> None:
                 file,
                 file_name=os.path.basename(last_video_path),
             )
+        last_frame_path = st.session_state.get("last_frame_path")
+        if last_frame_path and os.path.isfile(last_frame_path):
+            with open(last_frame_path, "rb") as file:
+                st.download_button(
+                    "ラストフレームをダウンロード",
+                    file,
+                    file_name=os.path.basename(last_frame_path),
+                )
         st.video(last_video_path)
 
     history = st.session_state.get("history", [])
@@ -263,6 +275,7 @@ def main() -> None:
         st.subheader("履歴")
         for item in history:
             video_path = item.get("video_path") or ""
+            last_frame_path = item.get("last_frame_path") or ""
             title = f"{item.get('timestamp', '')} | {os.path.basename(video_path)}"
             with st.expander(title, expanded=False):
                 st.text_area(
@@ -281,6 +294,14 @@ def main() -> None:
                             file_name=os.path.basename(video_path),
                             key=f"dl_{title}",
                         )
+                    if last_frame_path and os.path.isfile(last_frame_path):
+                        with open(last_frame_path, "rb") as file:
+                            st.download_button(
+                                "ラストフレームをダウンロード",
+                                file,
+                                file_name=os.path.basename(last_frame_path),
+                                key=f"last_{title}",
+                            )
                     st.video(video_path)
                 else:
                     st.warning("動画ファイルが見つかりません。")
