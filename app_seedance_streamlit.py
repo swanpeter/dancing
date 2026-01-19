@@ -25,7 +25,7 @@ SEEDANCE_MODEL_ID = (
     or os.environ.get("SEEDANCE_MODEL_ID")
     or "ep-20251224135439-xlh46"
 )
-BASE_EXTRA_PARAMS = "masterpiece, best quality, ultra-detailed, photorealistic, 8k, sharp focus,"
+BASE_EXTRA_PARAMS = "Characters always speak Japanese in videos, masterpiece, best quality, ultra-detailed, photorealistic, 8k, sharp focus,"
 DEFAULT_SAVE_DIR = os.path.join(tempfile.gettempdir(), "seedance_outputs")
 POLL_INTERVAL = 1
 POLL_TIMEOUT = 600
