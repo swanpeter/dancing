@@ -166,15 +166,8 @@ def run_generation(
 
 
 def init_session_state() -> None:
-    if "logs" not in st.session_state:
-        st.session_state.logs = []
     if "history" not in st.session_state:
         st.session_state.history = []
-
-
-def append_log(message: str, log_area: st.delta_generator.DeltaGenerator) -> None:
-    st.session_state.logs.append(f"[{time.strftime('%H:%M:%S')}] {message}")
-    log_area.text("\n".join(st.session_state.logs))
 
 
 def main() -> None:
@@ -190,11 +183,13 @@ def main() -> None:
         st.header("出力設定")
         save_dir = DEFAULT_SAVE_DIR
         resolution_value = st.selectbox("解像度", ["480", "720", "1080"], index=0)
+        aspect_value = st.selectbox("アスペクト比", ["21:9", "16:9", "4:3", "1:1", "3:4", "9:16"], index=1)
         duration_value = st.slider("生成秒数", min_value=4, max_value=12, value=12, step=1)
         camera_fixed_value = st.selectbox("カメラFIXED", ["false", "true"], index=0)
         extra_params = (
             f"{BASE_EXTRA_PARAMS} "
             f"--resolution {resolution_value}p "
+            f"--aspect {aspect_value} "
             f"--duration {duration_value} "
             f"--camerafixed {camera_fixed_value}"
         )
@@ -211,15 +206,12 @@ def main() -> None:
             "終了画像 (任意)", type=["png", "jpg", "jpeg", "webp", "bmp"]
         )
 
-    log_area = st.empty()
-    log_area.text("\n".join(st.session_state.logs))
-
     if st.button("生成", type="primary"):
         if not prompt_text.strip():
             st.error("プロンプトを入力してください。")
             return
         try:
-            log_func = lambda msg: append_log(msg, log_area)
+            log_func = lambda _msg: None
 
             first_bytes = first_file.read() if first_file else None
             first_mime = first_file.type if first_file else None
