@@ -4,3 +4,5 @@ requests
 streamlit
 Pillow
 streamlit-cookies-controller
+httpx>=0.24
+
