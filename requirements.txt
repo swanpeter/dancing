@@ -1,4 +1,4 @@
-byteplussdkarkruntime
+byteplus-python-sdk-v2
 python-dotenv
 requests
 streamlit
