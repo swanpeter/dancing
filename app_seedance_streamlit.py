@@ -21,9 +21,11 @@ from streamlit_auth_history_utils import (
 load_dotenv()
 
 SEEDANCE_MODEL_ID = (
-    get_secret_value("SEEDANCE_MODEL_ID") or os.environ.get("SEEDANCE_MODEL_ID") or "ep-20251224135439-xlh46"
+    get_secret_value("SEEDANCE_MODEL_ID")
+    or os.environ.get("SEEDANCE_MODEL_ID")
+    or "ep-20251224135439-xlh46"
 )
-DEFAULT_EXTRA_PARAMS = "masterpiece, best quality, ultra-detailed, photorealistic, 8k, sharp focus, --resolution 480p --duration 12 --camerafixed false"
+BASE_EXTRA_PARAMS = "masterpiece, best quality, ultra-detailed, photorealistic, 8k, sharp focus,"
 DEFAULT_SAVE_DIR = os.path.join(tempfile.gettempdir(), "seedance_outputs")
 POLL_INTERVAL = 1
 POLL_TIMEOUT = 600
@@ -187,7 +189,15 @@ def main() -> None:
     with st.sidebar:
         st.header("出力設定")
         save_dir = DEFAULT_SAVE_DIR
-        extra_params = st.text_input("追加パラメータ", value=DEFAULT_EXTRA_PARAMS)
+        resolution_value = st.selectbox("解像度", ["480", "720", "1080"], index=0)
+        duration_value = st.slider("生成秒数", min_value=4, max_value=12, value=12, step=1)
+        camera_fixed_value = st.selectbox("カメラFIXED", ["false", "true"], index=0)
+        extra_params = (
+            f"{BASE_EXTRA_PARAMS} "
+            f"--resolution {resolution_value}p "
+            f"--duration {duration_value} "
+            f"--camerafixed {camera_fixed_value}"
+        )
 
     st.subheader("入力")
     prompt_text = st.text_area("プロンプト", height=120)
