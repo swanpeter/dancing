@@ -189,7 +189,7 @@ def main() -> None:
         extra_params = (
             f"{BASE_EXTRA_PARAMS} "
             f"--resolution {resolution_value}p "
-            f"--aspect {aspect_value} "
+            f"--ratio {aspect_value} "
             f"--duration {duration_value} "
             f"--camerafixed {camera_fixed_value}"
         )
