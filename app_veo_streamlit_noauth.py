@@ -483,7 +483,7 @@ def main() -> None:
         )
         aspect_ratio = st.selectbox("アスペクト比", ["16:9", "9:16"], index=0)
         resolution = st.selectbox("解像度", ["720p", "1080p"], index=0)
-        duration_seconds = st.selectbox("生成秒数", [4, 6, 8], index=2)
+        duration_seconds = st.selectbox("生成秒数", [4, 6, 8], index=0)
         enhance_prompt = st.checkbox("プロンプト補強", value=True, disabled=not using_vertex_ai)
         seed_text = st.text_input("Seed (任意)", value="", disabled=not using_vertex_ai)
         negative_prompt = st.text_area(
