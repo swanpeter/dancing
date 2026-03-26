@@ -2,6 +2,7 @@ import mimetypes
 import os
 import tempfile
 import time
+import json
 from urllib.parse import urlparse
 from typing import Callable, Optional, Tuple
 
@@ -10,6 +11,7 @@ from dotenv import load_dotenv
 from google.cloud import storage
 from google import genai
 from google.genai import types
+from google.oauth2 import service_account
 
 from streamlit_auth_history_utils import (
     get_secret_value,
@@ -69,6 +71,7 @@ def get_vertex_project() -> Optional[str]:
         or os.environ.get("GCP_PROJECT")
         or get_secret_value("VERTEX_PROJECT_ID")
         or os.environ.get("VERTEX_PROJECT_ID")
+        or get_gcp_service_account_project()
     )
 
 
@@ -80,6 +83,68 @@ def get_vertex_location() -> str:
         or os.environ.get("VERTEX_LOCATION")
         or "us-central1"
     )
+
+
+def get_gcp_service_account_section() -> Optional[dict]:
+    try:
+        secrets_obj = st.secrets
+    except Exception:
+        return None
+    section = None
+    if isinstance(secrets_obj, dict):
+        section = secrets_obj.get("gcp_service_account")
+    else:
+        getter = getattr(secrets_obj, "get", None)
+        if callable(getter):
+            try:
+                section = getter("gcp_service_account")
+            except Exception:
+                section = None
+    if section is None:
+        return None
+    if isinstance(section, dict):
+        return dict(section)
+    try:
+        return dict(section)
+    except Exception:
+        return None
+
+
+def get_gcp_service_account_project() -> Optional[str]:
+    section = get_gcp_service_account_section()
+    if not section:
+        return None
+    project_id = section.get("project_id")
+    if isinstance(project_id, str) and project_id.strip():
+        return project_id.strip()
+    raw_json = section.get("service_account_json")
+    if isinstance(raw_json, str) and raw_json.strip():
+        try:
+            payload = json.loads(raw_json)
+        except json.JSONDecodeError:
+            return None
+        project_id = payload.get("project_id")
+        if isinstance(project_id, str) and project_id.strip():
+            return project_id.strip()
+    return None
+
+
+def get_vertex_credentials():
+    section = get_gcp_service_account_section()
+    if not section:
+        return None
+    raw_json = section.get("service_account_json")
+    info = None
+    if isinstance(raw_json, str) and raw_json.strip():
+        try:
+            info = json.loads(raw_json)
+        except json.JSONDecodeError as exc:
+            raise RuntimeError(f"service_account_json のJSON解析に失敗しました: {exc}") from exc
+    else:
+        info = {key: value for key, value in section.items() if key != "bucket_name"}
+    if not isinstance(info, dict) or not info.get("client_email") or not info.get("private_key"):
+        return None
+    return service_account.Credentials.from_service_account_info(info)
 
 
 def parse_bool(value: Optional[object]) -> Optional[bool]:
@@ -118,8 +183,8 @@ def get_default_model(using_vertex_ai: bool) -> str:
     if ENV_VEO_MODEL:
         return ENV_VEO_MODEL
     if using_vertex_ai:
-        return "veo-3.1-generate-001"
-    return "veo-3.1-generate-preview"
+        return "veo-3.1-fast-generate-001"
+    return "veo-3.1-fast-generate-preview"
 
 
 def build_client() -> genai.Client:
@@ -127,10 +192,12 @@ def build_client() -> genai.Client:
         project = get_vertex_project()
         if not project:
             raise RuntimeError("Vertex AI モードには GOOGLE_CLOUD_PROJECT が必要です。")
+        credentials = get_vertex_credentials()
         return genai.Client(
             vertexai=True,
             project=project,
             location=get_vertex_location(),
+            credentials=credentials,
         )
     api_key = get_api_key()
     if not api_key:
