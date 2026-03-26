@@ -50,6 +50,7 @@ GEMINI_API_UNSUPPORTED_OPTIONS = {
     "negative_prompt",
     "seed",
 }
+VERTEX_AI_SCOPES = ["https://www.googleapis.com/auth/cloud-platform"]
 
 
 def get_api_key() -> Optional[str]:
@@ -144,7 +145,10 @@ def get_vertex_credentials():
         info = {key: value for key, value in section.items() if key != "bucket_name"}
     if not isinstance(info, dict) or not info.get("client_email") or not info.get("private_key"):
         return None
-    return service_account.Credentials.from_service_account_info(info)
+    return service_account.Credentials.from_service_account_info(
+        info,
+        scopes=VERTEX_AI_SCOPES,
+    )
 
 
 def parse_bool(value: Optional[object]) -> Optional[bool]:
